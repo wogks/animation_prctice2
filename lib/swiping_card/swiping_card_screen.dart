@@ -2,23 +2,24 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
-class SwipingCardScreen extends StatefulWidget {
-  const SwipingCardScreen({super.key});
+class SwipingCardsScreen extends StatefulWidget {
+  const SwipingCardsScreen({super.key});
 
   @override
-  State<SwipingCardScreen> createState() => _SwipingCardScreenState();
+  State<SwipingCardsScreen> createState() => _SwipingCardsScreenState();
 }
 
-class _SwipingCardScreenState extends State<SwipingCardScreen>
+class _SwipingCardsScreenState extends State<SwipingCardsScreen>
     with SingleTickerProviderStateMixin {
   late final size = MediaQuery.of(context).size;
-  double posX = 0.0;
+
   late final AnimationController _position = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-      upperBound: size.width,
-      lowerBound: size.width * -1,
-      value: 0.0);
+    vsync: this,
+    duration: const Duration(seconds: 1),
+    lowerBound: (size.width + 100) * -1,
+    upperBound: (size.width + 100),
+    value: 0.0,
+  );
 
   late final Tween<double> _rotation = Tween(
     begin: -15,
@@ -27,13 +28,23 @@ class _SwipingCardScreenState extends State<SwipingCardScreen>
 
   void _onHorizontalDragUpdate(DragUpdateDetails details) {
     _position.value += details.delta.dx;
-    setState(() {});
   }
 
-  void _onHorizontalDragEnds(DragEndDetails details) {
-    setState(() {
-      _position.animateTo(0, curve: Curves.bounceOut);
-    });
+  void _onHorizontalDragEnd(DragEndDetails details) {
+    final bound = size.width - 200;
+    final dropZone = size.width + 100;
+    if (_position.value.abs() >= bound) {
+      if (_position.value.isNegative) {
+        _position.animateTo((dropZone) * -1);
+      } else {
+        _position.animateTo(dropZone);
+      }
+    } else {
+      _position.animateTo(
+        0,
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   @override
@@ -44,39 +55,42 @@ class _SwipingCardScreenState extends State<SwipingCardScreen>
 
   @override
   Widget build(BuildContext context) {
-    // print(posX);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('card'),
+        title: const Text('Swiping Cards'),
       ),
       body: AnimatedBuilder(
         animation: _position,
         builder: (context, child) {
-          final angle = _rotation
-              .transform((_position.value + size.width / 2) / size.width);
-          print(angle);
+          final angle = _rotation.transform(
+                (_position.value + size.width / 2) / size.width,
+              ) *
+              pi /
+              180;
           return Stack(
+            alignment: Alignment.topCenter,
             children: [
-              Align(
-                alignment: Alignment.topCenter,
+              Positioned(
+                top: 100,
                 child: GestureDetector(
-                  onHorizontalDragEnd: _onHorizontalDragEnds,
                   onHorizontalDragUpdate: _onHorizontalDragUpdate,
+                  onHorizontalDragEnd: _onHorizontalDragEnd,
                   child: Transform.translate(
                     offset: Offset(_position.value, 0),
                     child: Transform.rotate(
-                      angle: angle * pi / 180,
+                      angle: angle,
                       child: Material(
+                        elevation: 10,
                         color: Colors.red.shade100,
                         child: SizedBox(
-                          height: size.height * 0.5,
                           width: size.width * 0.8,
+                          height: size.height * 0.5,
                         ),
                       ),
                     ),
                   ),
                 ),
-              )
+              ),
             ],
           );
         },
